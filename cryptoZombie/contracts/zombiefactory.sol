@@ -22,15 +22,25 @@ event NewZombie(uint zombieId, string name, uint dna);
   //Zombie 구조체의 public 배열을 생성
   Zombie[] public zombies;
 
+  //좀비 소유자의 주소를 추적
+    mapping (uint=> address) public zombieToOwner;
+    // 소유한 좀비의 숫자를 추적
+    mapping (address => uint) ownerZombieCount;
+
 // 좀비 생성 함수
 // 솔리디티에서 함수는 기본적으로 public으로 선언
 // private는 컨트랙트 내의 다른 함수들만이 이 함수를 호출하여 배열로 무언가를 추가할 수 있음.
 // private 함수명도 언더바(_)
 // view 함수로 선언 : 데이터를 보기만 하고 변경하지 않는다는 뜻
 // pure 함수 : 앱에서 어떤 데이터도 접근하지 않는 것을 의미
+// internal로 바꾸어 선언하여 이 함수가 정의된 컨트랙트를 상속하는 컨트랙트에서도 접근 가능하게 함.
   function _createZombie(string _name, uint _dna) private {
     //새로운 Zombie를 생성하여 zombies 배열에 추가
     uint id = zombies.push(Zombie(_name, _dna))-1;
+    // zombieToOwner 매핑을 업데이트하여 id에 대하여 msg.sender가 저장
+    zombieToOwner[id]=msg.sender;
+    //저장된 msg.sender을 고려하여 ownerZombieCount를 증가
+    ownerZombieCount[msg.sender]++;
     NewZombie(id,_name,_dna);
   }
 
@@ -43,6 +53,7 @@ event NewZombie(uint zombieId, string name, uint dna);
 
 //좀비의 이름을 입력값으로 받아 랜덤 DNA를 가진 좀비를 만드는 함수
   function createRandomZombie(string _name) public {
+    require(ownerZombieCount[msg.sender] == 0);
     uint randDna = _generateRandomDna(_name);
     _createZombie(_name,randDna);
 
