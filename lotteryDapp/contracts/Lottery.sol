@@ -29,6 +29,9 @@ contract Lottery {
   //팟머니 
   uint256 private _pot;
 
+  //이벤트
+  event BET(uint256 index, address bettor, uint256 amount, bytes challenges, uint256 answerBlockNumber);
+
 //스마트 컨트랙트가 생성될 때,, 배포가 될때, 가장 먼저 실행되는 함수.
   constructor() public {
     owner = msg.sender;
@@ -36,17 +39,37 @@ contract Lottery {
     // msg.sender : 스마트 컨트랙트에서 사용하는 전역변수 
   }
 
-  function getSomeValue() public pure returns (uint256 value){
-    return 5;
-  }
+  // 테스트용 코드 주석처리
+  // function getSomeValue() public pure returns (uint256 value){
+  //   return 5;
+  // }
 
 // view : 스마트 컨트랙트에 있는 변수를 조회할 때
   function getPot() public view returns (uint256 pot){
     return _pot;
   }
 
-  // Bet : 베팅
-    // save the bet to the queue
+  
+  // /**
+  // * 베팅 함수
+  // *
+  // * @dev 베팅을 한다. 유저는 0.005 ETH를 보내야 하고, 베팅용 1 byte 글자를 보낸다.
+  // * 큐에 저장된 베팅 정보는 이후 distribute 함수에서 해결된다.
+  // * @param challenges 유저가 베팅하는 글자
+  // * @return 함수가 잘 수행되었는지 확인하는 bool 값
+  // *
+  // */
+  function bet(bytes memory challenges) public payable returns (bool result){
+    // Check the proper ether is sent
+    require(msg.value == BET_AMOUNT, "not enough ETH");
+    // Push bet to the queue
+    require(pushBet(challenges),"Fail to add a new Bet Info");
+    // Emit event
+    emit BET(_tail - 1, msg.sender, msg.value, challenges, block.number + BET_BLOCK_INTERVAL);
+
+    return true;
+  }
+    // Save the bet to the queue
 
   // Distribute : 검증
     // check the answer
@@ -60,10 +83,10 @@ contract Lottery {
   }
 
   //queue 이용하니 puch와 pop의 개념이 필요
-  function pushBet(bytes memory challenges) public returns (bool) {
+  function pushBet(bytes memory challenges) internal returns (bool) {
     BetInfo memory b;
-    //베터는 보낸사람
-    b.bettor = msg.sender;
+    //베터는 보낸사람 , 버전업이 되어 전송하려면 payable 붙여줘야함.
+    b.bettor = payable(msg.sender);
     //block.number : 현재 트랜잭션에 들어가는 블럭의 수를 가져옴
     b.answerBlockNumber = block.number + BET_BLOCK_INTERVAL;
     b.challenges = challenges;
@@ -74,7 +97,7 @@ contract Lottery {
     return true;
   }
 
-  function popBet(uint256 index) public returns (bool){
+  function popBet(uint256 index) internal returns (bool){
     //매핑 이기때문에 리스트에서 삭제하기보다는 단순히 값을 초기화 하자.
     //맵에 있는 값을 delete하게 되면, gas를 돌려받게 된다. 이것의 의미는 더이상 데이터를 블록체인 데이터에 저장하지 않겠다의 의미. state database에 저장된 값을 그냥 없앤다
     delete _bets[index];
