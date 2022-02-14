@@ -23,4 +23,11 @@ contract('Lottery', function ([deployer, user1, user2]) {
 
     assert.equal(value, 5);
   })
+
+  //it.only : 특정 케이스만 테스틑 할 때
+  it.only('getPot should return current pot', async () => {
+    let pot = await lottery.getPot();
+    // 처음에는 팟머니가 없는 상황이라 0
+    assert.equal(pot, 0);
+  })
 })
