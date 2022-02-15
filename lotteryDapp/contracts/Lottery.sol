@@ -86,13 +86,13 @@ contract Lottery {
   function pushBet(bytes memory challenges) internal returns (bool) {
     BetInfo memory b;
     //베터는 보낸사람 , 버전업이 되어 전송하려면 payable 붙여줘야함.
-    b.bettor = payable(msg.sender);
+    b.bettor = payable(msg.sender); // 20 bytes
     //block.number : 현재 트랜잭션에 들어가는 블럭의 수를 가져옴
-    b.answerBlockNumber = block.number + BET_BLOCK_INTERVAL;
-    b.challenges = challenges;
+    b.answerBlockNumber = block.number + BET_BLOCK_INTERVAL; // 32 bytes  20000 gas
+    b.challenges = challenges; // byte  // 20000gas 가정
     
     _bets[_tail] = b;
-    _tail++;
+    _tail++; // 32 bytes 값 변화 // 20000gas 가정 -> 5000 gas 
 
     return true;
   }

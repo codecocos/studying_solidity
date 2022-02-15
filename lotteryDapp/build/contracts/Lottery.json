@@ -54,7 +54,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [],
@@ -67,7 +68,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     },
     {
       "inputs": [
@@ -86,7 +88,8 @@
         }
       ],
       "stateMutability": "payable",
-      "type": "function"
+      "type": "function",
+      "payable": true
     },
     {
       "inputs": [
@@ -115,7 +118,8 @@
         }
       ],
       "stateMutability": "view",
-      "type": "function"
+      "type": "function",
+      "constant": true
     }
   ],
   "metadata": "{\"compiler\":{\"version\":\"0.8.11+commit.d7f03943\"},\"language\":\"Solidity\",\"output\":{\"abi\":[{\"inputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"index\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"bettor\",\"type\":\"address\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"amount\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"bytes\",\"name\":\"challenges\",\"type\":\"bytes\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"answerBlockNumber\",\"type\":\"uint256\"}],\"name\":\"BET\",\"type\":\"event\"},{\"inputs\":[{\"internalType\":\"bytes\",\"name\":\"challenges\",\"type\":\"bytes\"}],\"name\":\"bet\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"result\",\"type\":\"bool\"}],\"stateMutability\":\"payable\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint256\",\"name\":\"index\",\"type\":\"uint256\"}],\"name\":\"getBetInfo\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"answerBlockNumber\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"bettor\",\"type\":\"address\"},{\"internalType\":\"bytes\",\"name\":\"challenges\",\"type\":\"bytes\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"getPot\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"pot\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"owner\",\"outputs\":[{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"}],\"devdoc\":{\"kind\":\"dev\",\"methods\":{},\"version\":1},\"userdoc\":{\"kind\":\"user\",\"methods\":{},\"version\":1}},\"settings\":{\"compilationTarget\":{\"project:/contracts/Lottery.sol\":\"Lottery\"},\"evmVersion\":\"london\",\"libraries\":{},\"metadata\":{\"bytecodeHash\":\"ipfs\"},\"optimizer\":{\"enabled\":false,\"runs\":200},\"remappings\":[]},\"sources\":{\"project:/contracts/Lottery.sol\":{\"keccak256\":\"0x7524649044de184ab79bca571c60d6ba77a76617c74b637d920bfe70af6a3f00\",\"urls\":[\"bzz-raw://24685a4a37f47502ffb09a8054503e597c8643796c72307d74643f844b9f3211\",\"dweb:/ipfs/Qmb74vKPYj3kszSXfCtWeLbDUAWAriMBusQBeW3EV1wUNQ\"]}},\"version\":1}",
@@ -10619,10 +10623,17 @@
       "links": {},
       "address": "0xED43Bcf94743F0248d896D52A9693F775FE3642C",
       "transactionHash": "0xe8b7cb2e95c747c6a07b825664d4cc5c0790dd8d48fc75652582764c90922c4c"
+    },
+    "1644847131471": {
+      "events": {},
+      "links": {},
+      "address": "0x9c0b1d0D23b7389BE3A58229D24d55B1cD522620",
+      "transactionHash": "0x726c43b17e1b13d5712f33ab9c61cc65bffa0cb44d867e267556ad13ff9b5755"
     }
   },
   "schemaVersion": "3.4.4",
-  "updatedAt": "2022-02-14T12:41:04.869Z",
+  "updatedAt": "2022-02-14T15:12:21.395Z",
+  "networkType": "ethereum",
   "devdoc": {
     "kind": "dev",
     "methods": {},
