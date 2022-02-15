@@ -4,7 +4,7 @@ contract Lottery {
   struct BetInfo {
     uint256 answerBlockNumber;
     address payable bettor; //payable : 해당 주소로 트랜스퍼 하기 위해서 붙임.
-    bytes challenges; // 0Xab..
+    bytes1 challenges; // 0Xab..
   }
 
 //tail이 증가하면서 값을 넣어줌
@@ -29,8 +29,11 @@ contract Lottery {
   //팟머니 
   uint256 private _pot;
 
+  enum BlockStatus {Checkable, NotRevealed, BlockLimitPassed}
+  enum BettingResult {Fail, Win, Draw}
+
   //이벤트
-  event BET(uint256 index, address bettor, uint256 amount, bytes challenges, uint256 answerBlockNumber);
+  event BET(uint256 index, address bettor, uint256 amount, bytes1 challenges, uint256 answerBlockNumber);
 
 //스마트 컨트랙트가 생성될 때,, 배포가 될때, 가장 먼저 실행되는 함수.
   constructor() public {
@@ -59,7 +62,7 @@ contract Lottery {
   // * @return 함수가 잘 수행되었는지 확인하는 bool 값
   // *
   // */
-  function bet(bytes memory challenges) public payable returns (bool result){
+  function bet(bytes1 challenges) public payable returns (bool result){
     // Check the proper ether is sent
     require(msg.value == BET_AMOUNT, "not enough ETH");
     // Push bet to the queue
@@ -72,10 +75,103 @@ contract Lottery {
     // Save the bet to the queue
 
   // Distribute : 검증
-    // check the answer
+  function distribute() public {
+    // head 3 4 5 6 7 8 9 10 11 12 tail
+    uint256 cur;
+    BetInfo memory b;
+    BlockStatus currentBlockStatus;
+
+    // head 부터 tail까지 도는 루프 : 각각에 대해서 상태확인이 필요
+    for (cur = _head; cur < _tail; cur++) {
+      b = _bets[cur];
+      currentBlockStatus = getBlockStatus(b.answerBlockNumber);
+     
+      // Checkable : block.number > AnswerBlockNumber && block.number - BLOCK_LIMIT < AnswerBlockNumber 1
+      // 현재 블록넘버 보다 정답 블록 넘버 + 블록리밋 한 값보다 작고,
+      if(currentBlockStatus == BlockStatus.Checkable){
+        // if win, bettor gets pot
+
+        // if fail, bettor's money goes pot
+
+        // if draw, refund bettor's money
+        
+      }
+
+      // 블록해쉬를 알 수 없을 때 : 아직 마이닝이 되지 않은 경우 혹은 블럭이 마이닝 되었지만, 너무 오래되어 확인 할 수 없을 때
+      // Not Revealed : 아직 마이닝 되지 않은 경우 : block.number <= AnswerBlockNuumber 2
+      if(currentBlockStatus == BlockStatus.NotRevealed){
+        break;
+      }
+
+      // Block Limit Passed : 너무 오래되어 확인 할 수 없는 경우 : block.number >= AnswerBlockNumber + BLOCK_LIMIT 3
+      if(currentBlockStatus == BlockStatus.BlockLimitPassed){
+        // refund
+        // emit refund
+      }
+      popBet(cur);
+    }
+  }
+
+  // /**
+  // * @dev 베팅글자와 정답을 확인한다.
+  // * @param challenges 베팅글자
+  // * @param answer 블락해쉬
+  // * @return 정답결과  
+  // */
+  function isMatch(bytes1 challenges, bytes32 answer) public pure returns (BettingResult){
+    // challenges 0xab
+    // answer 0xab......ff 32 bytes
+
+    bytes1 c1 = challenges;
+    bytes1 c2 = challenges;
+
+    bytes1 a1 = answer[0];
+    bytes1 a2 = answer[0];
+
+    // Get first number : shift연산
+    c1 = c1 >> 4; // 0xab -> 0x0a
+    c1 = c1 << 4; // 0x0a -> 0xa0
+
+    a1 = a1 >> 4;
+    a1 = a1 << 4;
+
+    // Get Second number
+    c2 = c2 << 4; // 0xab -> 0xb0
+    c2 = c2 >> 4; // 0xb0 -> 0x0b
+
+    a2 = a2 << 4;
+    a2 = a2 >> 4;
+
+    if(a1 == c1 && a2 == c2){
+      return BettingResult.Win;
+    }
+
+    if(a1 == c1 || a2 == c2){
+      return BettingResult.Draw;
+    }
+
+    return BettingResult.Fail;
+  }
+    
+
+  function getBlockStatus(uint256 answerBlockNumber) internal view returns (BlockStatus){
+    if(block.number > answerBlockNumber && block.number - BLOCK_LIMIT < answerBlockNumber) {
+      return BlockStatus.Checkable;
+    }
+
+    if(block.number <= answerBlockNumber){
+      return BlockStatus.NotRevealed;
+    }
+
+    if(block.number >= answerBlockNumber + BLOCK_LIMIT){
+      return BlockStatus.BlockLimitPassed;
+    }
+    //3가지 중 하나에서 걸리겠지만 만일의 경우를 대비하여, 문제가 있는 경우 환불해주는 것이 안전하므로,,,
+    return BlockStatus.BlockLimitPassed;
+  }
   
   //getter
-  function getBetInfo(uint256 index) public view returns (uint256 answerBlockNumber, address bettor, bytes memory challenges){
+  function getBetInfo(uint256 index) public view returns (uint256 answerBlockNumber, address bettor, bytes1 challenges){
     BetInfo memory b = _bets[index];
     answerBlockNumber = b.answerBlockNumber;
     bettor = b.bettor;
@@ -83,7 +179,7 @@ contract Lottery {
   }
 
   //queue 이용하니 puch와 pop의 개념이 필요
-  function pushBet(bytes memory challenges) internal returns (bool) {
+  function pushBet(bytes1 challenges) internal returns (bool) {
     BetInfo memory b;
     //베터는 보낸사람 , 버전업이 되어 전송하려면 payable 붙여줘야함.
     b.bettor = payable(msg.sender); // 20 bytes

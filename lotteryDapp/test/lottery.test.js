@@ -35,7 +35,7 @@ contract('Lottery', function ([deployer, user1, user2]) {
     assert.equal(pot, 0);
   })
 
-  describe.only('Bet', function () {
+  describe('Bet', function () {
     it('should fail when the bet money is not 0.005 ETH', async () => {
       // Fail transaction
       // assertRevert의 인자가 보내는 에러를 assertRevert가 받아서 try-catch 문으로 받는다.
@@ -74,6 +74,29 @@ contract('Lottery', function ([deployer, user1, user2]) {
 
       // check log
       await expectEvent.inLogs(receipt.logs, "BET");
+    })
+  })
+
+  describe.only('isMatch', function () {
+    //아무 해쉬나 가져와서, 테스트를 위해 3,4번째를 a 와 b로 변경.
+    let blockHash = '0xabec17438e4f0afb9cc8b77ce84bb7fd501497cfa9a1695095247daa5b4b7bcc';
+
+    it('should be BettingResult.Win when two characters match', async () => {
+      let matchingResult = await lottery.isMatch('0xab', blockHash);
+      assert.equal(matchingResult, 1)
+    })
+
+    it('should be BettingResult.Fail when two characters match', async () => {
+      let matchingResult = await lottery.isMatch('0xcd', blockHash);
+      assert.equal(matchingResult, 0)
+    })
+
+    it('should be BettingResult.Draw when two characters match', async () => {
+      let matchingResult = await lottery.isMatch('0xaf', blockHash);
+      assert.equal(matchingResult, 2)
+
+      matchingResult = await lottery.isMatch('0xfb', blockHash);
+      assert.equal(matchingResult, 2)
     })
   })
 })
