@@ -85,7 +85,7 @@ contract Lottery {
   // */
   function bet(bytes1 challenges) public payable returns (bool result){
     // Check the proper ether is sent
-    require(msg.value == BET_AMOUNT, "not enough ETH");
+    require(msg.value == BET_AMOUNT, "Not enough ETH");
     // Push bet to the queue
     require(pushBet(challenges),"Fail to add a new Bet Info");
     // Emit event

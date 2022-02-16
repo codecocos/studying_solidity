@@ -96,17 +96,18 @@ contract('Lottery', function ([deployer, user1, user2]) {
         await lottery.betAndDistribute('0xef', { from: user2, value: betAmount }) // 6 -> 9
 
         let potBefore = await lottery.getPot(); // == 0.01 ETH
-        let userBalanceBefore = await web3.eth.getBalance(user1);
+        // let userBalanceBefore = await web3.eth.getBalance(user1);
 
-        let receipt7 = await lottery.betAndDistribute('0xef', { from: user2, value: betAmount }) // 7 -> 10 // user1에게 pot이 간다
+        // let receipt7 = await lottery.betAndDistribute('0xef', { from: user2, value: betAmount }) // 7 -> 10 // user1에게 pot이 간다
 
-        let potAfter = await lottery.getPot(); // == 0
-        let user1BalanceAfter = await web3.eth.getBalance(); // == before + 0.015
+        // let potAfter = await lottery.getPot(); // == 0
+        // let user1BalanceAfter = await web3.eth.getBalance(); // == before + 0.015
 
         // pot 의 변화량 확인
         console.log(potBefore);
+        // assert.equal(potBefore.toString(), new web3.utils.BN('10000000000000000').toString());
+        // assert.equal(potAfter.toString(), new web3.utils.BN('0').toString());
 
-        // assert.equal(potBefore,betAmountBN)
 
         // user(winner)의 밸런스를 확인
       })
