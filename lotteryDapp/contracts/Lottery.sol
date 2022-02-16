@@ -37,7 +37,7 @@ contract Lottery {
   enum BettingResult {Fail, Win, Draw}
 
   //이벤트
-  event BET(uint256 index, address bettor, uint256 amount, bytes1 challenges, uint256 answerBlockNumber);
+  event BET(uint256 index, address indexed bettor, uint256 amount, bytes1 challenges, uint256 answerBlockNumber);
   event WIN(uint256 index, address bettor, uint256 amount, bytes1 challenges, bytes1 answer, uint256 answerBlockNumber);
   event FAIL(uint256 index, address bettor, uint256 amount, bytes1 challenges, bytes1 answer, uint256 answerBlockNumber);
   event DRAW(uint256 index, address bettor, uint256 amount, bytes1 challenges, bytes1 answer, uint256 answerBlockNumber);

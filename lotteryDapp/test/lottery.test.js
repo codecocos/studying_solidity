@@ -82,7 +82,7 @@ contract('Lottery', function ([deployer, user1, user2]) {
 
   describe('Distribute', function () {
     describe('When the answer is checkable', function () {
-      it.only('should give the user the pot when the answer matches', async () => {
+      it('should give the user the pot when the answer matches', async () => {
         // 두 글자 다 맞았을 때
 
         await lottery.setAnswerForTest('0xabec17438e4f0afb9cc8b77ce84bb7fd501497cfa9a1695095247daa5b4b7bcc', { from: deployer })
@@ -96,36 +96,86 @@ contract('Lottery', function ([deployer, user1, user2]) {
         await lottery.betAndDistribute('0xef', { from: user2, value: betAmount }) // 6 -> 9
 
         let potBefore = await lottery.getPot(); // == 0.01 ETH
-        // let userBalanceBefore = await web3.eth.getBalance(user1);
+        let user1BalanceBefore = await web3.eth.getBalance(user1);
 
-        // let receipt7 = await lottery.betAndDistribute('0xef', { from: user2, value: betAmount }) // 7 -> 10 // user1에게 pot이 간다
+        let receipt7 = await lottery.betAndDistribute('0xef', { from: user2, value: betAmount }) // 7 -> 10 // user1에게 pot이 간다
 
-        // let potAfter = await lottery.getPot(); // == 0
-        // let user1BalanceAfter = await web3.eth.getBalance(); // == before + 0.015
+        let potAfter = await lottery.getPot(); // == 0
+        let user1BalanceAfter = await web3.eth.getBalance(user1); // == before + 0.015
 
-        // pot 의 변화량 확인
-        console.log(potBefore);
-        // assert.equal(potBefore.toString(), new web3.utils.BN('10000000000000000').toString());
-        // assert.equal(potAfter.toString(), new web3.utils.BN('0').toString());
-
+        // pot 의 변화량 확인        
+        assert.equal(potBefore.toString(), new web3.utils.BN('10000000000000000').toString()); //potBefore가 BN으로 나오니 형식을 맞춰서 비교.
+        assert.equal(potAfter.toString(), new web3.utils.BN('0').toString());
 
         // user(winner)의 밸런스를 확인
+        user1BalanceBefore = new web3.utils.BN(user1BalanceBefore)//문자열을 파라미터로 받아 BN으로 변환
+        assert.equal(user1BalanceBefore.add(potBefore).add(betAmountBN).toString(), new web3.utils.BN(user1BalanceAfter).toString());
       })
+
       it('should give the user the amount he or she when a single character matches', async () => {
         // 한 글자만 맞았을 때
+
+        await lottery.setAnswerForTest('0xabec17438e4f0afb9cc8b77ce84bb7fd501497cfa9a1695095247daa5b4b7bcc', { from: deployer })
+
+        // 베팅이 여러번
+        await lottery.betAndDistribute('0xef', { from: user2, value: betAmount }) // 1 -> 4
+        await lottery.betAndDistribute('0xef', { from: user2, value: betAmount }) // 2 -> 5
+        await lottery.betAndDistribute('0xaf', { from: user1, value: betAmount }) // 3 -> 6
+        await lottery.betAndDistribute('0xef', { from: user2, value: betAmount }) // 4 -> 7
+        await lottery.betAndDistribute('0xef', { from: user2, value: betAmount }) // 5 -> 8
+        await lottery.betAndDistribute('0xef', { from: user2, value: betAmount }) // 6 -> 9
+
+        let potBefore = await lottery.getPot(); // == 0.01 ETH
+        let user1BalanceBefore = await web3.eth.getBalance(user1);
+
+        let receipt7 = await lottery.betAndDistribute('0xef', { from: user2, value: betAmount }) // 7 -> 10 // user1에게 pot이 간다
+
+        let potAfter = await lottery.getPot(); // == 0.01 ETH
+        let user1BalanceAfter = await web3.eth.getBalance(user1); // == before + 0.005 ETH
+
+        // pot 의 변화량 확인        
+        assert.equal(potBefore.toString(), potAfter.toString());
+
+        // user(winner)의 밸런스를 확인
+        user1BalanceBefore = new web3.utils.BN(user1BalanceBefore)//문자열을 파라미터로 받아 BN으로 변환
+        assert.equal(user1BalanceBefore.add(betAmountBN).toString(), new web3.utils.BN(user1BalanceAfter).toString());
       })
-      it('should get the eht of user when the answer does not match at all', async () => {
-        // 다 틀렸을 때
-      })
     })
 
-    describe('When the answer is not revealed(Not Mined)', function () {
+    it('should get the eht of user when the answer does not match at all', async () => {
+      // 다 틀렸을 때
+      await lottery.setAnswerForTest('0xabec17438e4f0afb9cc8b77ce84bb7fd501497cfa9a1695095247daa5b4b7bcc', { from: deployer })
 
+      // 베팅이 여러번
+      await lottery.betAndDistribute('0xef', { from: user2, value: betAmount }) // 1 -> 4
+      await lottery.betAndDistribute('0xef', { from: user2, value: betAmount }) // 2 -> 5
+      await lottery.betAndDistribute('0xef', { from: user1, value: betAmount }) // 3 -> 6
+      await lottery.betAndDistribute('0xef', { from: user2, value: betAmount }) // 4 -> 7
+      await lottery.betAndDistribute('0xef', { from: user2, value: betAmount }) // 5 -> 8
+      await lottery.betAndDistribute('0xef', { from: user2, value: betAmount }) // 6 -> 9
+
+      let potBefore = await lottery.getPot(); // == 0.01 ETH
+      let user1BalanceBefore = await web3.eth.getBalance(user1);
+
+      let receipt7 = await lottery.betAndDistribute('0xef', { from: user2, value: betAmount }) // 7 -> 10 // user1에게 pot이 간다
+
+      let potAfter = await lottery.getPot(); // == 0.015 ETH
+      let user1BalanceAfter = await web3.eth.getBalance(user1); // == before
+
+      // pot 의 변화량 확인        
+      assert.equal(potBefore.add(betAmountBN).toString(), potAfter.toString());
+
+      // user(winner)의 밸런스를 확인
+      user1BalanceBefore = new web3.utils.BN(user1BalanceBefore)//문자열을 파라미터로 받아 BN으로 변환
+      assert.equal(user1BalanceBefore.toString(), new web3.utils.BN(user1BalanceAfter).toString());
     })
+  })
 
-    describe('When the answer id not revealed(Block limit is passed', function () {
+  describe('When the answer is not revealed(Not Mined)', function () {
 
-    })
+  })
+
+  describe('When the answer id not revealed(Block limit is passed', function () {
 
   })
 
@@ -151,4 +201,7 @@ contract('Lottery', function ([deployer, user1, user2]) {
       assert.equal(matchingResult, 2)
     })
   })
+
+
 })
+
