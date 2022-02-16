@@ -1,4 +1,5 @@
 const Lottery = artifacts.require('Lottery');
+const { assert } = require('chai');
 const assertRevert = require('./assertRevert')
 const expectEvent = require('./expectEvent');
 
@@ -7,12 +8,14 @@ contract('Lottery', function ([deployer, user1, user2]) {
 
   let lottery;
   let betAmount = 5 * 10 ** 15;
+  let betAmountBN = new web3.utils.BN('5000000000000000');
   let bet_block_interval = 3;
 
   beforeEach(async () => {
     //console.log('Before each');
 
     //테스트용 배포
+    // new(): 빈칸이면 무조건 0번이 배포자가 됨.
     lottery = await Lottery.new()
   })
 
@@ -77,7 +80,55 @@ contract('Lottery', function ([deployer, user1, user2]) {
     })
   })
 
-  describe.only('isMatch', function () {
+  describe('Distribute', function () {
+    describe('When the answer is checkable', function () {
+      it.only('should give the user the pot when the answer matches', async () => {
+        // 두 글자 다 맞았을 때
+
+        await lottery.setAnswerForTest('0xabec17438e4f0afb9cc8b77ce84bb7fd501497cfa9a1695095247daa5b4b7bcc', { from: deployer })
+
+        // 베팅이 여러번
+        await lottery.betAndDistribute('0xef', { from: user2, value: betAmount }) // 1 -> 4
+        await lottery.betAndDistribute('0xef', { from: user2, value: betAmount }) // 2 -> 5
+        await lottery.betAndDistribute('0xab', { from: user1, value: betAmount }) // 3 -> 6
+        await lottery.betAndDistribute('0xef', { from: user2, value: betAmount }) // 4 -> 7
+        await lottery.betAndDistribute('0xef', { from: user2, value: betAmount }) // 5 -> 8
+        await lottery.betAndDistribute('0xef', { from: user2, value: betAmount }) // 6 -> 9
+
+        let potBefore = await lottery.getPot(); // == 0.01 ETH
+        let userBalanceBefore = await web3.eth.getBalance(user1);
+
+        let receipt7 = await lottery.betAndDistribute('0xef', { from: user2, value: betAmount }) // 7 -> 10 // user1에게 pot이 간다
+
+        let potAfter = await lottery.getPot(); // == 0
+        let user1BalanceAfter = await web3.eth.getBalance(); // == before + 0.015
+
+        // pot 의 변화량 확인
+        console.log(potBefore);
+
+        // assert.equal(potBefore,betAmountBN)
+
+        // user(winner)의 밸런스를 확인
+      })
+      it('should give the user the amount he or she when a single character matches', async () => {
+        // 한 글자만 맞았을 때
+      })
+      it('should get the eht of user when the answer does not match at all', async () => {
+        // 다 틀렸을 때
+      })
+    })
+
+    describe('When the answer is not revealed(Not Mined)', function () {
+
+    })
+
+    describe('When the answer id not revealed(Block limit is passed', function () {
+
+    })
+
+  })
+
+  describe('isMatch', function () {
     //아무 해쉬나 가져와서, 테스트를 위해 3,4번째를 a 와 b로 변경.
     let blockHash = '0xabec17438e4f0afb9cc8b77ce84bb7fd501497cfa9a1695095247daa5b4b7bcc';
 

@@ -17,7 +17,7 @@ contract Lottery {
 
   //주소를 오너로 설정
   //public : 자동으로 getter를 만들어 준다, 스마트 컨트랙트 외부에서 바로 오너의 값을 알 수 있다.
-  address public owner;
+  address payable public owner;
 
   // 블록해시로 확인할 수 있는 제한 256으로 고정 
   uint256 constant internal BLOCK_LIMIT = 256;
@@ -29,15 +29,24 @@ contract Lottery {
   //팟머니 
   uint256 private _pot;
 
+  bytes32 public answerForTest;
+
+  bool private mode = false; // false : use answer for test, true : use real blok hash
+
   enum BlockStatus {Checkable, NotRevealed, BlockLimitPassed}
   enum BettingResult {Fail, Win, Draw}
 
   //이벤트
   event BET(uint256 index, address bettor, uint256 amount, bytes1 challenges, uint256 answerBlockNumber);
+  event WIN(uint256 index, address bettor, uint256 amount, bytes1 challenges, bytes1 answer, uint256 answerBlockNumber);
+  event FAIL(uint256 index, address bettor, uint256 amount, bytes1 challenges, bytes1 answer, uint256 answerBlockNumber);
+  event DRAW(uint256 index, address bettor, uint256 amount, bytes1 challenges, bytes1 answer, uint256 answerBlockNumber);
+  event REFUND(uint256 index, address bettor, uint256 amount, bytes1 challenges, uint256 answerBlockNumber);
+
 
 //스마트 컨트랙트가 생성될 때,, 배포가 될때, 가장 먼저 실행되는 함수.
   constructor() public {
-    owner = msg.sender;
+    owner = payable(msg.sender);
     // 배포가 될 때, 보낸사람을 오너로 저장하겠다.
     // msg.sender : 스마트 컨트랙트에서 사용하는 전역변수 
   }
@@ -50,6 +59,18 @@ contract Lottery {
 // view : 스마트 컨트랙트에 있는 변수를 조회할 때
   function getPot() public view returns (uint256 pot){
     return _pot;
+  }
+  
+  // /**
+  //    * @dev 베팅과 정답 체크를 한다. 유저는 0.005 ETH를 보내야 하고, 베팅용 1 byte 글자를 보낸다.
+  //    * 큐에 저장된 베팅 정보는 이후 distribute 함수에서 해결된다.
+  //    * @param challenges 유저가 베팅하는 글자
+  //    * @return 함수가 잘 수행되었는지 확인해는 bool 값
+  //    */
+  function betAndDistribute(bytes1 challenges) public payable returns (bool result){
+    bet(challenges);
+    distribute();
+    return true;
   }
 
   
@@ -75,11 +96,18 @@ contract Lottery {
     // Save the bet to the queue
 
   // Distribute : 검증
+  /**
+    * @dev 베팅 결과값을 확인 하고 팟머니를 분배한다.
+    * 정답 실패 : 팟머니 축척, 정답 맞춤 : 팟머니 획득, 한글자 맞춤 or 정답 확인 불가 : 베팅 금액만 획득
+    */
   function distribute() public {
     // head 3 4 5 6 7 8 9 10 11 12 tail
     uint256 cur;
+    uint256 transferAmount;
+
     BetInfo memory b;
     BlockStatus currentBlockStatus;
+    BettingResult currentBettingResult;
 
     // head 부터 tail까지 도는 루프 : 각각에 대해서 상태확인이 필요
     for (cur = _head; cur < _tail; cur++) {
@@ -89,11 +117,40 @@ contract Lottery {
       // Checkable : block.number > AnswerBlockNumber && block.number - BLOCK_LIMIT < AnswerBlockNumber 1
       // 현재 블록넘버 보다 정답 블록 넘버 + 블록리밋 한 값보다 작고,
       if(currentBlockStatus == BlockStatus.Checkable){
+        bytes32 answerBlcokHash = getAnswerBlockHash(b.answerBlockNumber);
+        //블록해시는 테스트하기에는 적합하지 않음 : 그 이유는 랜덤값이기 때문에
+        currentBettingResult = isMatch(b.challenges, answerBlcokHash);
         // if win, bettor gets pot
+        if(currentBettingResult == BettingResult.Win){
+
+          // transfer pot
+          // 이벤트에 얼마나 전송되는 지 찍기 위해서
+          transferAmount = transferAfterPayingFee(b.bettor, _pot + BET_AMOUNT);
+
+          // pot = 0
+          _pot = 0;
+
+          // emit WIN
+          emit WIN(cur, b.bettor, transferAmount, b.challenges, answerBlcokHash[0], b.answerBlockNumber);
+        }
 
         // if fail, bettor's money goes pot
+        if(currentBettingResult == BettingResult.Fail){
+          // pot + BET_AMOUNT
+          _pot += BET_AMOUNT;
+          // emit FAIL
+          emit FAIL(cur, b.bettor, 0, b.challenges, answerBlcokHash[0], b.answerBlockNumber);
+        }
 
         // if draw, refund bettor's money
+        if(currentBettingResult == BettingResult.Draw){
+          // transfer only BET_AMOUNT
+          transferAmount = transferAfterPayingFee(b.bettor, BET_AMOUNT);
+          // emit DRAW
+        emit DRAW(cur, b.bettor, transferAmount, b.challenges, answerBlcokHash[0], b.answerBlockNumber);
+
+        }
+
         
       }
 
@@ -106,11 +163,43 @@ contract Lottery {
       // Block Limit Passed : 너무 오래되어 확인 할 수 없는 경우 : block.number >= AnswerBlockNumber + BLOCK_LIMIT 3
       if(currentBlockStatus == BlockStatus.BlockLimitPassed){
         // refund
-        // emit refund
+        transferAmount = transferAfterPayingFee(b.bettor, BET_AMOUNT);
+        // emit REFUND
+        emit REFUND(cur, b.bettor, transferAmount, b.challenges, b.answerBlockNumber);
+
       }
       popBet(cur);
     }
+    //큐가 줄어든다.
+    _head = cur;
   }
+
+//특정 주소에 얼마를 주겠다.
+  function transferAfterPayingFee(address payable addr, uint256 amount) internal returns (uint256){
+    //수수료
+    //uint256 fee = amount / 100;
+    //테스트를 간단히 하기위해 0으로
+    uint256 fee = 0;
+    uint256 amountWithoutFee = amount - fee;
+
+    // transfer to addr
+    addr.transfer(amountWithoutFee);
+
+    // transfet to owner
+    owner.transfer(fee);
+
+    return amountWithoutFee;
+  }
+
+  function setAnswerForTest(bytes32 answer) public returns (bool result) {
+      require(msg.sender == owner, "Only owner can set the answer for test mode");
+      answerForTest = answer;
+      return true;
+  }
+
+function getAnswerBlockHash(uint256 answerBlockNumber) internal view returns (bytes32 answer){
+  return mode ? blockhash(answerBlockNumber) : answerForTest;
+}
 
   // /**
   // * @dev 베팅글자와 정답을 확인한다.
